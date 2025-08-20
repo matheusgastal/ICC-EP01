@@ -14,32 +14,78 @@ real_t newtonRaphson (Polinomio p, real_t x0, int criterioParada, int *it, real_
 
 
 // Retorna valor do erro quando método finalizou. Este valor depende de tipoErro
-real_t bisseccao (Polinomio p, real_t a, real_t b, int criterioParada, int *it, real_t *raiz)
+real_t bisseccao(Polinomio p, real_t a, real_t b, int criterioParada, int *it, real_t *raiz, int tipo_calc)
 {
-    double anterior, novo;
-    novo = (a + b) / 2;
-    real_t resultado_novo = 0;
-    real_t resultado_a = 0;
-    for(int i = p.grau; i > 0; i--){
-        resultado_novo += p.p[i] * pow(novo,i);
-        resultado_a += p.p[i] * pow(a,i);
+    double px_a, dpx_a;
+    double px_b, dpx_b;
+    double px_m, dpx_m;
+    double m;
+
+    *it = 0;
+
+    if (tipo_calc == 1) {
+        calcPolinomio_lento(p, a, &px_a, &dpx_a);
+        calcPolinomio_lento(p, b, &px_b, &dpx_b);
+    } else {
+        calcPolinomio_rapido(p, a, &px_a, &dpx_a);
+        calcPolinomio_rapido(p, b, &px_b, &dpx_b);
     }
 
-    if(resultado_a * resultado_novo > 0)
-        a = novo;
-    else if(resultado_a * resultado_novo < 0)
-        b = novo;
-    else{
-        return novo;
+    if (px_a * px_b > 0) {
+        printf("Intervalo invalido\n");
+        return 0;
+    }
+
+    do {
+        (*it)++;
+        m = (a + b) / 2.0;
+
+        if (tipo_calc == 1) {
+            calcPolinomio_lento(p, m, &px_m, &dpx_m);
+        } else {
+            calcPolinomio_rapido(p, m, &px_m, &dpx_m);
+        }
+
+        if (px_a * px_m < 0) {
+            b = m;
+            px_b = px_m;
+        } else if (px_m * px_b < 0) {
+            a = m;
+            px_a = px_m;
+        } else {
+            break; 
+        }
+
+    } while (*it < 600 && fabs(px_m) > criterioParada);
+
+    *raiz = m;
+    return fabs(px_m); 
+}
+
+
+
+
+void calcPolinomio_rapido(Polinomio p, double x, double *px, double *dpx)
+{
+    *px = p.p[p.grau];  
+    *dpx = 0.0;
+
+    // Itera do grau-1 até o termo constante
+    for (int i = p.grau - 1; i >= 0; i--) {
+        *dpx = (*dpx) * x + (*px);   // regra de Horner para derivada
+        *px  = (*px)  * x + p.p[i];  // regra de Horner para polinômio
     }
 }
 
 
-void calcPolinomio_rapido(Polinomio p, real_t x, real_t *px, real_t *dpx)
+void calcPolinomio_lento(Polinomio p, double x, double *px, double *dpx)
 {
-}   
-
-void calcPolinomio_lento(Polinomio p, real_t x, real_t *px, real_t *dpx)
-{
-
+    *px = 0.0;   
+    *dpx = 0.0;  
+    for (int i = p.grau; i >= 0; i--) {
+        *px  += p.p[i] * pow(x, i);               
+        if (i > 0) {
+            *dpx += i * p.p[i] * pow(x, i - 1);  
+        }
+    }
 }
