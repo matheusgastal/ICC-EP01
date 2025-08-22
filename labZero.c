@@ -25,7 +25,7 @@ int main() {
     // Lê intervalo
     scanf("%lf %lf", &a, &b);
 
-    int it = 0;
+    int it = 1;
     real_t raiz, erro;
     double t0, t1, tempo;
     int criterio = 0;
@@ -33,31 +33,19 @@ int main() {
     printf("\nRAPIDO\n\n");
         for(int i = 0; i< 3; i++){
           it = 0; 
-          if(i== 0)
-            criterio = EPS; 
-          else if(i == 1)
-            criterio = DBL_EPSILON;
-          else
-            criterio = ULPS;
           
           t0 = timestamp();
-          erro = bisseccao(pol, a, b, criterio, &it, &raiz, 0); // rápido
+          erro = bisseccao(pol, a, b, i, &it, &raiz, 0); // rápido
           t1 = timestamp();
           tempo = t1 - t0;
-          printf("bissec  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
+          printf("bissec  %+1.15e % .15e %4d % .8f\n", raiz, erro, it, tempo);
         }
 
 
       for(int i = 0; i<3; i++){
-           it = 0; 
-          if(i== 0)
-            criterio = EPS; 
-          else if(i == 1)
-            criterio = DBL_EPSILON;
-          else
-            criterio = ULPS;
+          it = 0; 
           t0 = timestamp();
-          erro = newtonRaphson(pol, a, criterio, &it, &raiz, 0);
+          erro = newtonRaphson(pol, (a+b)/2, i, &it, &raiz, 0);
           t1 = timestamp();
           tempo = t1 - t0;
           printf("newton  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
@@ -70,16 +58,9 @@ int main() {
     printf("\nLENTO\n\n");
 
     for(int i = 0; i< 3; i++){
-         it = 0; 
-          if(i== 0)
-            criterio = EPS; 
-          else if(i == 1)
-            criterio = DBL_EPSILON;
-          else
-            criterio = ULPS;
-          
+          it = 0;  
           t0 = timestamp();
-          erro = bisseccao(pol, a, b, criterio, &it, &raiz, 1); // rápido
+          erro = bisseccao(pol, a, b, i, &it, &raiz, 1); // rápido
           t1 = timestamp();
           tempo = t1 - t0;
           printf("bissec  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
@@ -87,15 +68,9 @@ int main() {
          
         } 
   for(int i = 0; i<3; i++){
-      it = 0; 
-      if(i== 0)
-        criterio = EPS; 
-      else if(i == 1)
-        criterio = DBL_EPSILON;
-      else
-        criterio = ULPS;
+       it = 0; 
        t0 = timestamp();
-       erro = newtonRaphson(pol, a, criterio, &it, &raiz, 1);
+       erro = newtonRaphson(pol, (a+b)/2, i, &it, &raiz, 1);
        t1 = timestamp();
        tempo = t1 - t0;
        printf("newton  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
