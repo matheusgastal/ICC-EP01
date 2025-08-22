@@ -7,7 +7,7 @@
 #include "ZeroFuncao.h"
 
 int main() {
-    fesetround(FE_DOWNWARD); // arredondamento para baixo
+    fesetround(FE_DOWNWARD); 
 
     real_t a, b;
     Polinomio pol;
@@ -29,13 +29,12 @@ int main() {
     real_t raiz, erro;
     double t0, t1, tempo;
     int criterio = 0;
-    // ---------- RAPIDO ----------
     printf("\nRAPIDO\n\n");
         for(int i = 0; i< 3; i++){
           it = 0; 
           
           t0 = timestamp();
-          erro = bisseccao(pol, a, b, i, &it, &raiz, 0); // rápido
+          erro = bisseccao(pol, a, b, i, &it, &raiz, 0); 
           t1 = timestamp();
           tempo = t1 - t0;
           printf("bissec  %+1.15e % .15e %4d % .8f\n", raiz, erro, it, tempo);
@@ -48,22 +47,18 @@ int main() {
           erro = newtonRaphson(pol, (a+b)/2, i, &it, &raiz, 0);
           t1 = timestamp();
           tempo = t1 - t0;
-          printf("newton  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
+          printf("newton  %+1.15e % .15e %4d % .8f\n", raiz, erro, it, tempo);
       }
           
-
-
- 
-    // ---------- LENTO ----------
     printf("\nLENTO\n\n");
 
     for(int i = 0; i< 3; i++){
           it = 0;  
           t0 = timestamp();
-          erro = bisseccao(pol, a, b, i, &it, &raiz, 1); // rápido
+          erro = bisseccao(pol, a, b, i, &it, &raiz, 1); 
           t1 = timestamp();
           tempo = t1 - t0;
-          printf("bissec  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
+          printf("bissec  %+1.15e % .15e %4d % .8f\n", raiz, erro, it, tempo);
           
          
         } 
@@ -73,7 +68,7 @@ int main() {
        erro = newtonRaphson(pol, (a+b)/2, i, &it, &raiz, 1);
        t1 = timestamp();
        tempo = t1 - t0;
-       printf("newton  %+1.14e % .15e %4d % .8f\n", raiz, erro, it, tempo);
+       printf("newton  %+1.15e % .15e %4d % .8f\n", raiz, erro, it, tempo);
   }
     free(pol.p);
     return 0;
