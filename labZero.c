@@ -25,13 +25,14 @@ int main() {
     // Lê intervalo
     scanf("%lf %lf", &a, &b);
 
-    int it;
+    int it = 0;
     real_t raiz, erro;
     double t0, t1, tempo;
     int criterio = 0;
     // ---------- RAPIDO ----------
     printf("\nRAPIDO\n\n");
         for(int i = 0; i< 3; i++){
+          it = 0; 
           if(i== 0)
             criterio = EPS; 
           else if(i == 1)
@@ -48,6 +49,7 @@ int main() {
 
 
       for(int i = 0; i<3; i++){
+           it = 0; 
           if(i== 0)
             criterio = EPS; 
           else if(i == 1)
@@ -68,6 +70,7 @@ int main() {
     printf("\nLENTO\n\n");
 
     for(int i = 0; i< 3; i++){
+         it = 0; 
           if(i== 0)
             criterio = EPS; 
           else if(i == 1)
@@ -84,6 +87,7 @@ int main() {
          
         } 
   for(int i = 0; i<3; i++){
+      it = 0; 
       if(i== 0)
         criterio = EPS; 
       else if(i == 1)

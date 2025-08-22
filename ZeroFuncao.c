@@ -2,58 +2,68 @@
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <fenv.h>
 #include "utils.h"
 #include "ZeroFuncao.h"
+#include "DoubleType.h"
 
-// Função para calcular a diferença em ULPs entre dois doubles
+// ---------------- DIFERENÇA EM ULPs ----------------
 long ulps_diff(double a, double b) {
-    union { double d; long long i; } ua, ub;
-    ua.d = a;
-    ub.d = b;
-    return llabs(ua.i - ub.i);
+    Double_t da, db;
+    da.f = a;
+    db.f = b;
+
+    if (da.i >> 63) da.i = 0x8000000000000000ULL - da.i;
+    if (db.i >> 63) db.i = 0x8000000000000000ULL - db.i;
+
+    return llabs((long long)da.i - (long long)db.i);
 }
 
 // ---------------- NEWTON-RAPHSON ----------------
-real_t newtonRaphson(Polinomio p, real_t x0, int criterioParada, int *it, real_t *raiz, int tipo_calc)
-{
-    double px, dpx;
-    double erro = 0.0;
-    *it = 0;
-    *raiz = x0;
+real_t newtonRaphson(Polinomio p, real_t x0, int criterioParada, int *it, real_t *raiz, int tipo_calc) {
+    real_t px, dpx, dpx_antigo = 1.0;
+    real_t x_novo = x0;
+    real_t erro = 0.0;
 
     do {
         (*it)++;
-        double x_ant = x0;
+        real_t x_ant = x_novo;
 
         if (tipo_calc == 1)
-            calcPolinomio_lento(p, x0, &px, &dpx);
+            calcPolinomio_lento(p, x_ant, &px, &dpx);
         else
-            calcPolinomio_rapido(p, x0, &px, &dpx);
+            calcPolinomio_rapido(p, x_ant, &px, &dpx);
 
-        if (fabs(dpx) < 1e-12) break;
+        if (fabs(dpx) > ZERO) {
+            dpx_antigo = dpx;
+            x_novo = x_ant - (px / dpx);
+        } else {
+            x_novo = x_ant - (px / dpx_antigo);
+        }
 
-        x0 = x0 - px / dpx;
-        *raiz = x0;
-
-        erro = fabs(x0 - x_ant); // erro acumulado
-
-        // Critérios de parada
-        if (criterioParada == EPS && fabs(x0 - x_ant) < EPS) return erro;
-        if (criterioParada == DBL_EPSILON && fabs(x0 - x_ant) < DBL_EPSILON) return erro;
-        if (criterioParada == ULPS && ulps_diff(x0, x_ant) <= ULPS) return erro;
+        if (criterioParada == EPS) {
+            real_t diferenca = fabs(x_novo - x_ant);
+            erro = (fabs(x_novo) <= ZERO) ? diferenca : diferenca / fabs(x_novo);
+        } else if (criterioParada == DBL_EPSILON) {
+            erro = fabs(px);
+            if (erro <= DBL_EPSILON) break;
+        } else if (criterioParada == ULPS) {
+            erro = (real_t) ulps_diff(x_novo, x_ant);
+            if (erro <= ULPS) break;
+        }
 
     } while (*it < MAXIT);
 
-    return erro; // retorna erro acumulado final
+    *raiz = x_novo;
+    return erro;
 }
 
 // ---------------- BISSECCAO ----------------
-real_t bisseccao(Polinomio p, real_t a, real_t b, int criterioParada, int *it, real_t *raiz, int tipo_calc)
-{
-    double px_a, dpx_a, px_b, dpx_b, px_m, dpx_m;
-    double m;
-    *it = 0;
+real_t bisseccao(Polinomio p, real_t a, real_t b, int criterioParada, int *it, real_t *raiz, int tipo_calc) {
+    real_t px_a, px_b, x_ant, x_novo = a;
+    real_t dpx_a = 0.0, dpx_b = 0.0; // declara explicitamente dpx
+    real_t erro = 0.0;
 
     if (tipo_calc == 1) {
         calcPolinomio_lento(p, a, &px_a, &dpx_a);
@@ -63,64 +73,63 @@ real_t bisseccao(Polinomio p, real_t a, real_t b, int criterioParada, int *it, r
         calcPolinomio_rapido(p, b, &px_b, &dpx_b);
     }
 
-    if (px_a * px_b > 0) {
-        printf("Intervalo invalido\n");
+    if(fabs(px_a) <= ZERO) {
         *raiz = a;
-        return 0;
+        (*it)++;
+        return erro;
     }
-
-    double erro = b - a; // erro inicial é tamanho do intervalo
 
     do {
         (*it)++;
-        double m_ant = m;
-        m = (a + b) / 2.0;
+        x_ant = x_novo;
+        x_novo = (a + b) / 2.0;
 
-        if (tipo_calc == 1)
-            calcPolinomio_lento(p, m, &px_m, &dpx_m);
-        else
-            calcPolinomio_rapido(p, m, &px_m, &dpx_m);
-
-        *raiz = m;
+        real_t px_m, dpx_m = 0.0;
+        if (tipo_calc == 1) calcPolinomio_lento(p, x_novo, &px_m, &dpx_m);
+        else calcPolinomio_rapido(p, x_novo, &px_m, &dpx_m);
 
         if (px_a * px_m < 0) {
-            b = m;
+            b = x_novo;
             px_b = px_m;
-        } else if (px_m * px_b < 0) {
-            a = m;
-            px_a = px_m;
+            dpx_b = dpx_m;
         } else {
-            break;
+            a = x_novo;
+            px_a = px_m;
+            dpx_a = dpx_m;
         }
 
-        erro = fabs(b - a); // erro acumulado
+        if (criterioParada == EPS) {
+            real_t diferenca = fabs(x_novo - x_ant);
+            erro = (fabs(x_novo) <= ZERO) ? diferenca : diferenca / fabs(x_novo);
+        } else if (criterioParada == DBL_EPSILON) {
+            erro = fabs(px_m);
+            if (erro <= DBL_EPSILON) break;
+        } else if (criterioParada == ULPS) {
+            erro = (real_t) ulps_diff(x_novo, x_ant);
+            if (erro <= ULPS) break;
+        }
 
-        if (criterioParada == EPS && fabs(m_ant - m) < EPS) return erro;
-        if (criterioParada == DBL_EPSILON && fabs(m_ant - m) < DBL_EPSILON) return erro;
-        if (criterioParada == ULPS && ulps_diff(m_ant, m)  <= ULPS) return erro;
     } while (*it < MAXIT);
 
+    *raiz = x_novo;
     return erro;
 }
 
-
 // ---------------- CÁLCULO POLINÔMIO ----------------
 void calcPolinomio_rapido(Polinomio p, double x, double *px, double *dpx) {
-    *px = p.p[p.grau];  
+    *px = p.p[p.grau];
     *dpx = 0.0;
     for (int i = p.grau - 1; i >= 0; i--) {
-        *dpx = (*dpx) * x + (*px);   
-        *px  = (*px)  * x + p.p[i];  
+        *dpx = (*dpx) * x + (*px);
+        *px = (*px) * x + p.p[i];
     }
 }
 
 void calcPolinomio_lento(Polinomio p, double x, double *px, double *dpx) {
-    *px = 0.0;   
-    *dpx = 0.0;  
+    *px = 0.0;
+    *dpx = 0.0;
     for (int i = p.grau; i >= 0; i--) {
-        *px  += p.p[i] * pow(x, i);               
-        if (i > 0) {
-            *dpx += i * p.p[i] * pow(x, i - 1);  
-        }
+        *px += p.p[i] * pow(x, i);
+        if (i > 0) *dpx += i * p.p[i] * pow(x, i - 1);
     }
 }
